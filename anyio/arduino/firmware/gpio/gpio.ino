@@ -52,6 +52,16 @@
  *   david@thinkingbinaries.com
  */
 
+// Toggle debugging to serial port for manual typing.
+#undef DEBUG
+
+#ifdef DEBUG
+#define debugPrint(s) (Serial.print(s))
+#define debugPrintln(s) (Serial.println(s))
+#else
+#define debugPrint(s)
+#define debugPrintln(s)
+#endif
 
 /* The version string is sent back via the 'V' command */
 
@@ -124,29 +134,57 @@ void setup()
  * Other commands start with an upper case letter followed by
  * optional parameters.
  */
- 
+
+
+char serialRead()
+{
+  debugPrintln("Reading Byte");
+  while (Serial.available() == 0);
+  char val = (char) Serial.read();
+  debugPrint("Byte Read: ");
+  debugPrintln(val);
+  return val;
+}
+
+ /*
+  * M. Scott Doerrie
+  * 
+  * The main loop has been refactored to ensure that available bytes are always read from the serial port.
+  * For whatever reason, my Windows 10 computer is flushing the serial buffer by line.
+  * When a newline is in the bufffer, no additional bytes are transmitted by the driver.
+  * This causes the software loop below to hang indefinitely with 1 byte available.
+  * 
+  * The solution is to partially process commands as they come in, rather than wait for 2 characters to arrive.
+  */
 void loop()
 {
-  if (Serial.available()>=2)
-  { /* A command is waiting */
-    char pinch = (char) Serial.read();
-    if (pinch != '\r' && pinch != '\n')
-    { /* not a newline */
-      if (pinch >= 'A' && pinch <= 'Z')
-      { /* Upper case, so it's a global command */
-        char paramch = (char) Serial.read();
+  debugPrintln("Begin");
+  char pinch = serialRead();
+  debugPrint("pinch: ");
+  debugPrintln(pinch);
+  if (pinch != '\r' && pinch != '\n')
+  { /* not a newline */
+    if (pinch >= 'A' && pinch <= 'Z')
+    { /* Upper case, so it's a global command */
+        char paramch = serialRead();
+        debugPrint("paramch: ");
+        debugPrintln(paramch);
         command(pinch, paramch);
-      }
-      else if (pinch >= 'a' && pinch <= 'z')
-      { /* Lower case, so it's a pin number for default GPIO module */
-        char cmdch = (char) Serial.read();
-        gpio(pinch, cmdch);
-      }
-      else
-      { /* Anything else is rejected */
-        error(ERROR_UNKNOWN_COMMAND);
-      }
     }
+    else if (pinch >= 'a' && pinch <= 'z')
+    { /* Lower case, so it's a pin number for default GPIO module */
+      char cmdch = serialRead();
+      debugPrint("cmdch: ");
+      debugPrintln(cmdch);
+      gpio(pinch, cmdch);
+    }
+    else
+    { /* Anything else is rejected */
+      debugPrintln("Error");
+      error(ERROR_UNKNOWN_COMMAND);
+    }
+  }else{
+    debugPrintln("Ignore CR|LF");
   }
 }
 
@@ -184,13 +222,10 @@ static void command(char cmdch, char paramch)
     
     case 'G': /* GPIO */
     {
-      while (Serial.available() == 0)
-      {
-        /* busy wait for parameter to arrive */
-      }
       /* GPIO commands are two chars */
       char pinch = paramch;
-      char cmdch = (char)Serial.read();
+      debugPrintln("GPIO Command");
+      char cmdch = serialRead();
       gpio(pinch, cmdch);
     }
     break;
@@ -264,3 +299,4 @@ static void gpio(char pinch, char cmdch)
 
 
 /***** END OF FILE *****/
+
