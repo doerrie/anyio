@@ -18,10 +18,10 @@ Alternatively, you can import the driver module you want explicitly:
 By importing any of these driver modules, an instance of the
 appropriate GPIOClient is automatically created with the default
 configuration inside the appropriate driver GPIO.py file
- 
+
 If you want more than one instance of a GPIO connector, you can do it
 by using the class module directly like this:
- 
+
   import anyio.console.GPIOClient
   GPIO = GPIOClient.GPIOClient(params)
 
@@ -40,8 +40,11 @@ same methods as the static redirector modules.
 # Enable this if you want a Tkinter based GUI GPIO simulator
 #DRIVER = "gui"
 
+# Enable this if you want an arduino GPIO with Firmata firmware.
+DRIVER = "pymata"
+
 # Enable this if you want an arduino GPIO on a serial port
-DRIVER = "arduino"
+#DRIVER = "arduino"
 
 # Enable this if you want a GPIO client the other end of a network
 #DRIVER = "net"
@@ -72,13 +75,13 @@ elif DRIVER == "gui":
   from gui.GPIO import *
 elif DRIVER == "arduino":
   from arduino.GPIO import *
+elif DRIVER == "pymata":
+  from pymata.GPIO import *
 elif DRIVER == "net":
   from net.GPIO import *
 elif DRIVER == "RPi":
   from RPi.GPIO import *
 else:
   raise ValueError("Unknown driver:" + str(DRIVER))
-  
-# END
 
-  
+# END
